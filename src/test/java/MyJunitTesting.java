@@ -1,5 +1,7 @@
 import org.apache.commons.io.FileUtils;
+
 import java.lang.Thread;
+
 import org.checkerframework.checker.units.qual.K;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.*;
@@ -15,8 +17,7 @@ import java.text.FieldPosition;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class MyJunitTesting {
@@ -216,12 +217,92 @@ public class MyJunitTesting {
         driver.findElement(By.id("downloadButton")).click();
     }
 
-    
+    @DisplayName("Handling new tab")
+    @Test
+    public void newTab() throws InterruptedException {
+        driver.get("https://demoqa.com/browser-windows");
+        driver.findElement(By.id("tabButton")).click();
+        ArrayList<String> tab = new ArrayList<>(driver.getWindowHandles());
+//        switch to new tab
+        driver.switchTo().window(tab.get(1));
+        Thread.sleep(3000);
+        String text = driver.findElement(By.id("sampleHeading")).getText();
+        System.out.println(text);
+        String expected_text = "This is a sample page";
+        Assertions.assertTrue(text.contains(expected_text));
+        driver.close();
+        driver.switchTo().window(tab.get(0));
+    }
+
+    @DisplayName("Handling multiple windows")
+    @Test
+    public void newWindow() throws InterruptedException {
+        driver.get("https://demoqa.com/browser-windows");
+        driver.findElement(By.id("windowButton")).click();
+        String mainWindowHandle = driver.getWindowHandle();
+        System.out.println(mainWindowHandle);
+        Set<String> allWindowHandle = driver.getWindowHandles();
+        Iterator<String> iterator = allWindowHandle.iterator();
+
+        while (iterator.hasNext()) {
+            String childWindow = iterator.next();
+            if (!mainWindowHandle.equalsIgnoreCase(childWindow)) {
+                driver.switchTo().window(childWindow);
+                Thread.sleep(3000);
+                String text = driver.findElement(By.id("sampleHeading")).getText();
+                String expected_text = "This is a sample page";
+                Assertions.assertTrue(text.contains(expected_text));
+            }
+        }
+
+        driver.close();
+        driver.switchTo().window(mainWindowHandle);
+    }
+
+    @DisplayName("Handling web tables (like modals or pop-up)")
+    @Test
+    public void webTables() throws InterruptedException {
+        driver.get("https://demoqa.com/webtables");
+        driver.findElement(By.id("edit-record-1")).click();
+        Thread.sleep(3000);
+        driver.findElement(By.id("submit")).click();
+    }
+
+    @DisplayName("Scrapping data from a table")
+    @Test
+    public void scrapData() {
+        driver.get("https://demoqa.com/webtables");
+        List<WebElement> allRows = driver.findElements(By.className("rt-tr-group"));
+        int i;
+        for (WebElement row : allRows) {
+            List<WebElement> cells = row.findElements(By.className("rt-td"));
+            i = 0;
+            for (WebElement cell : cells) {
+                i++;
+                if (i < 6)
+                    System.out.print("Num[" + i + "] : " + cell.getText() + " ,");
+                if (i == 6)
+                    System.out.print("Num[" + i + "] : " + cell.getText());
+            }
+            System.out.println();
+        }
+    }
+
+    @DisplayName("Handling iframe")
+    @Test
+    public void handleIframe() {
+        driver.get("https://demoqa.com/frames");
+        driver.switchTo().frame("frame1");
+        String text = driver.findElement(By.id("sampleHeading")).getText();
+        String expected_text = "This is a sample page";
+        Assertions.assertTrue(text.contains(expected_text));
+        driver.switchTo().defaultContent();
+    }
 
     @AfterAll
     public void closeDriver() {
         //Close the entire browser
-//        driver.quit();
+        driver.quit();
 
 //        Close only that specific tab
 //        driver.close();
